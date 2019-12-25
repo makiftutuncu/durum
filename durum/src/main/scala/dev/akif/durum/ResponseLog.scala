@@ -1,4 +1,4 @@
-package dev.akif.dürüm
+package dev.akif.durum
 
 case class ResponseLog(status: Int,
                        method: String,

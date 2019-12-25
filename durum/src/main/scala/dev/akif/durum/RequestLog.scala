@@ -1,4 +1,4 @@
-package dev.akif.dürüm
+package dev.akif.durum
 
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
 

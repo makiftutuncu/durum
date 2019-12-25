@@ -1,4 +1,4 @@
-package dev.akif.dürüm
+package dev.akif.durum
 
 trait ResponseBuilder[F[_], OUT, RES] {
   def build(status: Int, out: OUT): F[RES]

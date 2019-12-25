@@ -2,7 +2,7 @@ package dev.akif
 
 import scala.concurrent.{ExecutionContext, Future}
 
-package object dürüm {
+package object durum {
   implicit def futureEffect(implicit ec: ExecutionContext): Effect[Future] =
     new Effect[Future] {
       override val unit: Future[Unit] =

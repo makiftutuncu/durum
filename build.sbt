@@ -4,7 +4,7 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.8" % Test
 
 // === Project Settings ===
 
-description          in ThisBuild := "TODO"
+description          in ThisBuild := "Delicious HTTP Wrapper"
 homepage             in ThisBuild := Some(url("https://github.com/makiftutuncu/durum"))
 startYear            in ThisBuild := Some(2019)
 licenses             in ThisBuild := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))

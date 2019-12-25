@@ -1,4 +1,4 @@
-package dev.akif.dürüm
+package dev.akif.durum
 
 trait Effect[F[+_]] {
   val unit: F[Unit]

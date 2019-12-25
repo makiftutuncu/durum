@@ -1,4 +1,4 @@
-package dev.akif.dürüm
+package dev.akif.durum
 
 trait RequestBuilder[F[_], REQ, IN] {
   def build(req: REQ): F[IN]

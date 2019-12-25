@@ -1,6 +1,6 @@
-package dev.akif.dürüm
+package dev.akif.durum
 
-abstract class Dürüm[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](implicit F: Effect[F]) {
+abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](implicit F: Effect[F]) {
   def getHeadersOfRequest(request: REQ): Map[String, String]
 
   def getMethodOfRequest(request: REQ): String
