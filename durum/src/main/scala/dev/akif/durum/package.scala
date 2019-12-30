@@ -5,9 +5,6 @@ import scala.concurrent.{ExecutionContext, Future}
 package object durum {
   implicit def futureEffect(implicit ec: ExecutionContext): Effect[Future] =
     new Effect[Future] {
-      override val unit: Future[Unit] =
-        Future.unit
-
       override def pure[A](a: A): Future[A] =
         Future.successful(a)
 

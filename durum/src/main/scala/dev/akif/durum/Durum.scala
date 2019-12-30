@@ -26,9 +26,9 @@ abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](i
 
   def getHeadersOfResponse(response: RES): Map[String, String]
 
-  def logRequest(log: RequestLog, failed: Boolean): Unit
+  def logRequest(log: RequestLog, failed: Boolean): String
 
-  def logResponse(log: ResponseLog, failed: Boolean): Unit
+  def logResponse(log: ResponseLog, failed: Boolean): String
 
   def basicAction(request: REQ)(action: CTX[Unit] => F[RES]): F[RES] =
     actionImplementation[Unit, RES](
@@ -135,7 +135,7 @@ abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](i
       (responseBodyAsString, failed)  = responseBodyAndFailed
       responseStatus                  = getStatusOfResponse(finalResponse)
     } yield {
-      val log = ResponseLog(responseStatus, requestMethod, requestURI, requestId, requestTime, responseHeaders, responseBodyAsString)
+      val log = ResponseLog(responseStatus, requestMethod, requestURI, requestId, requestTime, System.currentTimeMillis, responseHeaders, responseBodyAsString)
       logResponse(log, failed)
       finalResponse
     }

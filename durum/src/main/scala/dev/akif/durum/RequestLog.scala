@@ -15,16 +15,16 @@ case class RequestLog(method: String,
     val prefix = if (isIncoming) "<" else ">"
     val sb     = new StringBuilder(s"$title\n")
 
-    def append(s: String): StringBuilder     = sb.append(prefix).append(" ").append(s)
+    def append(s: String): StringBuilder     = sb.append(prefix).append(s)
     def appendLine(s: String): StringBuilder = append(s).append("\n")
 
-    appendLine(s"$method $uri")
-    appendLine(s"Id: $id")
-    appendLine(s"Time: $humanReadableTime")
-    headers.foreachEntry((name, value) => appendLine(s"$name: $value"))
+    appendLine(s" $method $uri")
+    appendLine(s" Id: $id")
+    appendLine(s" Time: $humanReadableTime")
+    headers.foreachEntry((name, value) => appendLine(s" $name: $value"))
     if (body.nonEmpty) {
       appendLine("")
-      append(body)
+      append(s" $body")
     }
 
     sb.toString()

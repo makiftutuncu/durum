@@ -1,6 +1,6 @@
 // === Dependencies ===
 
-lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.8" % Test
+lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.1.0" % Test
 
 // === Project Settings ===
 
@@ -14,8 +14,9 @@ organizationHomepage in ThisBuild := Some(url("https://akif.dev"))
 developers           in ThisBuild := List(Developer("makiftutuncu", "Mehmet Akif Tütüncü", "m.akif.tutuncu@gmail.com", url("https://akif.dev")))
 scmInfo              in ThisBuild := Some(ScmInfo(url("https://github.com/makiftutuncu/durum"), "git@github.com:makiftutuncu/durum.git"))
 
-lazy val scalaSettings = Seq(
-  scalaVersion         := "2.13.1",
+lazy val commonSettings = Seq(
+  scalaVersion := "2.13.1",
+
   libraryDependencies ++= Seq(
     scalaTest
   )
@@ -32,7 +33,7 @@ lazy val root = project
 
 lazy val durum = project
   .in(file("durum"))
-  .settings(scalaSettings)
+  .settings(commonSettings)
 
 // === Release Settings ===
 

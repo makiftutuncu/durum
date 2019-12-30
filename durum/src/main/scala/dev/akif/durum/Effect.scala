@@ -1,7 +1,7 @@
 package dev.akif.durum
 
 trait Effect[F[+_]] {
-  val unit: F[Unit]
+  val unit: F[Unit] = pure[Unit](())
 
   def pure[A](a: A): F[A]
 
