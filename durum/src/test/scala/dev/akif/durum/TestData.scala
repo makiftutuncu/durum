@@ -26,6 +26,10 @@ object TestData {
         }
     }
 
+  val inputFailedError = new RuntimeException("input-failed")
+  val authFailedError  = new RuntimeException("auth-failed")
+  val testError        = new RuntimeException("test")
+
   case class TestRequest[B](method: String, uri: String, headers: Map[String, String], body: B)
 
   case class TestResponse[B](status: Int, headers: Map[String, String], body: B)
@@ -50,6 +54,9 @@ object TestData {
       Try {
         val a = request.headers.getOrElse("Authorization", "").split(":")
         TestAuth(a(0), a(1))
+      } match {
+        case Failure(_)     => Failure(authFailedError)
+        case a @ Success(_) => a
       }
 
     override def buildContext[IN](id: String, request: TestRequest[String], headers: Map[String, String], in: IN, auth: TestAuth, time: Long): TestCtx[IN] =
@@ -68,5 +75,14 @@ object TestData {
     override def logRequest(log: RequestLog, failed: Boolean): String = log.toLogString(true)
 
     override def logResponse(log: ResponseLog, failed: Boolean): String = log.toLogString(false)
+
+    override def getOrCreateId(headers: Map[String, String]): String = "test-id"
   }
+
+  def requestBuilder[A](parser: String => Try[A]): RequestBuilder[Try, TestRequest[String], A] =
+    new RequestBuilder[Try, TestRequest[String], A] {
+      override def build(req: TestRequest[String]): Try[A] = parser(req.body)
+
+      override def log(req: TestRequest[String]): Try[String] = Success(req.body)
+    }
 }

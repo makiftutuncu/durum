@@ -1,5 +1,7 @@
 package dev.akif.durum
 
+import java.util.UUID
+
 abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](implicit F: Effect[F]) {
   def getHeadersOfRequest(request: REQ): Map[String, String]
 
@@ -29,6 +31,8 @@ abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](i
   def logRequest(log: RequestLog, failed: Boolean): String
 
   def logResponse(log: ResponseLog, failed: Boolean): String
+
+  def getOrCreateId(headers: Map[String, String]): String = headers.getOrElse(Durum.idHeaderName, UUID.randomUUID.toString)
 
   def basicAction(request: REQ)(action: CTX[Unit] => F[RES]): F[RES] =
     actionImplementation[Unit, RES](
@@ -78,7 +82,7 @@ abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](i
                                               buildResponse: OUT => F[RES],
                                               getResponseBodyAsString: OUT => F[String]): F[RES] = {
     val requestHeaders = getHeadersOfRequest(request)
-    val requestId      = Ctx.getOrCreateId(requestHeaders)
+    val requestId      = getOrCreateId(requestHeaders)
     val requestTime    = System.currentTimeMillis
     val requestMethod  = getMethodOfRequest(request)
     val requestURI     = getURIOfRequest(request)
@@ -129,7 +133,7 @@ abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](i
     for {
       resultDataAndResponse          <- responseF
       (errorOrOut, response)          = resultDataAndResponse
-      finalResponse                   = responseWithHeader(response, Ctx.idHeaderName -> requestId)
+      finalResponse                   = responseWithHeader(response, Durum.idHeaderName -> requestId)
       responseHeaders                 = getHeadersOfResponse(finalResponse)
       responseBodyAndFailed          <- responseAsStringM(errorOrOut)
       (responseBodyAsString, failed)  = responseBodyAndFailed
@@ -140,4 +144,8 @@ abstract class Durum[F[+_], REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](i
       finalResponse
     }
   }
+}
+
+object Durum {
+  val idHeaderName: String = "X-Id"
 }

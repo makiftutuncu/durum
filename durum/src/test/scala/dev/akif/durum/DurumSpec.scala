@@ -4,12 +4,13 @@ import dev.akif.durum.TestData._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.util.Success
+import scala.util.{Failure, Success, Try}
 
 class DurumSpec extends AnyWordSpec with Matchers {
+  lazy val testId: String                     = "test-id"
   lazy val testDurum: TestDurum               = new TestDurum
   lazy val testRequest: TestRequest[String]   = TestRequest("GET", "/", Map("foo" -> "bar"), "test")
-  lazy val testResponse: TestResponse[String] = TestResponse(200, Map("test" -> "test"), "test")
+  lazy val testResponse: TestResponse[String] = TestResponse(200, Map("test" -> "test", Durum.idHeaderName -> testId), "test")
 
   "Getting headers of a request" should {
     "return headers" in {
@@ -43,19 +44,21 @@ class DurumSpec extends AnyWordSpec with Matchers {
 
   "Building authorization data from a request" should {
     "fail when there is an error" in {
-      val maybeAuth = testDurum.buildAuth(testRequest)
+      val expected = Failure(authFailedError)
 
-      maybeAuth.isFailure shouldBe true
+      val actual = testDurum.buildAuth(testRequest)
+
+      actual shouldBe expected
     }
 
     "return authorization data" in {
       val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
 
-      val expected = TestAuth("test", "test")
+      val expected = Success(TestAuth("test", "test"))
 
       val actual = testDurum.buildAuth(validRequest)
 
-      actual shouldBe Success(expected)
+      actual shouldBe expected
     }
   }
 
@@ -83,25 +86,21 @@ class DurumSpec extends AnyWordSpec with Matchers {
 
   "Building a failed response" should {
     "return response with failure details" in {
-      val testError = new RuntimeException("test")
-
-      val expected = TestResponse(500, Map.empty, "test")
+      val expected = Success(TestResponse(500, Map.empty, "test"))
 
       val actual = testDurum.buildFailedResponse(testError)
 
-      actual shouldBe Success(expected)
+      actual shouldBe expected
     }
   }
 
   "Building a failed response as string" should {
     "return response with failure details" in {
-      val testError = new RuntimeException("test")
-
-      val expected = "test"
+      val expected = Success("test")
 
       val actual = testDurum.buildFailedResponseAsString(testError)
 
-      actual shouldBe Success(expected)
+      actual shouldBe expected
     }
   }
 
@@ -109,7 +108,7 @@ class DurumSpec extends AnyWordSpec with Matchers {
     "return response with given header added" in {
       val initialResponse = testResponse.copy(headers = Map.empty)
 
-      val expected = testResponse
+      val expected = testResponse.copy(headers = Map("test" -> "test"))
 
       val actual = testDurum.responseWithHeader(initialResponse, "test" -> "test")
 
@@ -131,7 +130,7 @@ class DurumSpec extends AnyWordSpec with Matchers {
           |<
           |< test""".stripMargin
 
-      val actual = testDurum.logRequest(requestLog, false)
+      val actual = testDurum.logRequest(requestLog, failed = false)
 
       actual shouldBe expected
     }
@@ -150,7 +149,97 @@ class DurumSpec extends AnyWordSpec with Matchers {
           |>
           |> test""".stripMargin
 
-      val actual = testDurum.logResponse(requestLog, false)
+      val actual = testDurum.logResponse(requestLog, failed = false)
+
+      actual shouldBe expected
+    }
+  }
+
+  "Basic action" should {
+    "return error when auth fails" in {
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "auth-failed"))
+
+      val actual = testDurum.basicAction(testRequest) { ctx =>
+        Success(testResponse)
+      }
+
+      actual shouldBe expected
+    }
+
+    "return error when action fails" in {
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "test"))
+
+      val actual = testDurum.basicAction(validRequest) { ctx =>
+        Failure(testError)
+      }
+
+      actual shouldBe expected
+    }
+
+    "perform action and return response" in {
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
+
+      val expected = Success(testResponse)
+
+      val actual = testDurum.basicAction(validRequest) { ctx =>
+        Success(testResponse)
+      }
+
+      actual shouldBe expected
+    }
+  }
+
+  "Action with input" should {
+    "return error when converting input fails" in {
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](_ => Failure(inputFailedError))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "input-failed"))
+
+      val actual = testDurum.actionWithInput[Boolean](testRequest) { ctx =>
+        Success(testResponse)
+      }
+
+      actual shouldBe expected
+    }
+
+    "return error when auth fails" in {
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](s => Try(s.toBoolean))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "auth-failed"))
+
+      val actual = testDurum.actionWithInput[Boolean](testRequest.copy(body = "true")) { ctx =>
+        Success(testResponse)
+      }
+
+      actual shouldBe expected
+    }
+
+    "return error when action fails" in {
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](s => Try(s.toBoolean))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "test"))
+
+      val actual = testDurum.actionWithInput[Boolean](validRequest.copy(body = "true")) { ctx =>
+        Failure(testError)
+      }
+
+      actual shouldBe expected
+    }
+
+    "perform action and return response" in {
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](s => Try(s.toBoolean))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
+
+      val expected = Success(testResponse)
+
+      val actual = testDurum.actionWithInput[Boolean](validRequest.copy(body = "true")) { ctx =>
+        Success(testResponse)
+      }
 
       actual shouldBe expected
     }

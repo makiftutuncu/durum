@@ -16,6 +16,7 @@ scmInfo              in ThisBuild := Some(ScmInfo(url("https://github.com/makift
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.13.1",
+  javacOptions ++= Seq("-source", "11"),
 
   libraryDependencies ++= Seq(
     scalaTest
