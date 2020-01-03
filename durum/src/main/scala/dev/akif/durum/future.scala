@@ -1,12 +1,22 @@
-package dev.akif
+package dev.akif.durum
 
 import scala.concurrent.{ExecutionContext, Future}
 
-package object durum {
-  implicit def futureEffect(implicit ec: ExecutionContext): Effect[Future] =
-    new Effect[Future] {
+object future {
+  /**
+   * An implicit conversion to provide an [[dev.akif.durum.Effect]] implementation of [[scala.concurrent.Future]]
+   *
+   * @param ec An implicit instance of a [[scala.concurrent.ExecutionContext]]
+   *
+   * @return An effect of Future
+   */
+  implicit def FutureEffect(implicit ec: ExecutionContext): Effect[Future, Throwable] =
+    new Effect[Future, Throwable] {
       override def pure[A](a: A): Future[A] =
         Future.successful(a)
+
+      override def error[A](t: Throwable): Future[A] =
+        Future.failed(t)
 
       override def map[A, B](f: Future[A])(m: A => B): Future[B] =
         f.map(m)
@@ -28,16 +38,4 @@ package object durum {
             handleError(t)
         }
     }
-
-  implicit class EffectOps[F[+_], A](private val f: F[A])(implicit F: Effect[F]) {
-    @inline def map[B](m: A => B): F[B] = F.map(f)(m)
-
-    @inline def flatMap[B](fm: A => F[B]): F[B] = F.flatMap(f)(fm)
-
-    @inline def foreach[U](fe: A => U): Unit = F.foreach(f)(fe)
-
-    @inline def fold[B](handleError: Throwable => F[B], fm: A => F[B]): F[B] = F.fold(f)(handleError, fm)
-
-    @inline def mapError[AA >: A](handleError: Throwable => F[AA]): F[AA] = F.mapError[A, AA](f)(handleError)
-  }
 }

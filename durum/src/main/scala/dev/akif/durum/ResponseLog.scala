@@ -1,32 +1,25 @@
 package dev.akif.durum
 
-case class ResponseLog(status: Int,
-                       method: String,
-                       uri: String,
-                       id: String,
-                       time: Long,
-                       now: Long,
-                       headers: Map[String, String],
-                       body: String) {
-  val took: Long = now - time
-
-  def toLogString(isIncoming: Boolean): String = {
-    val title  = s"${if (isIncoming) "Incoming" else "Outgoing"} Response"
-    val prefix = if (isIncoming) "<" else ">"
-    val sb     = new StringBuilder(s"$title\n")
-
-    def append(s: String): StringBuilder     = sb.append(prefix).append(s)
-    def appendLine(s: String): StringBuilder = append(s).append("\n")
-
-    appendLine(s" $status $method $uri")
-    appendLine(s" Id: $id")
-    appendLine(s" Took: $took ms")
-    headers.foreachEntry((name, value) => appendLine(s" $name: $value"))
-    if (body.nonEmpty) {
-      appendLine("")
-      append(s" $body")
-    }
-
-    sb.toString()
-  }
+/**
+ * HTTP log for a response
+ *
+ * @param status  HTTP status code of the response
+ * @param now     Time when the response is built, used to calculate total time of the request, see [[System#currentTimeMillis]]
+ *
+ * @see [[dev.akif.durum.HttpLog]]
+ */
+case class ResponseLog(override val id: String,
+                       override val time: Long,
+                       override val method: String,
+                       override val uri: String,
+                       override val headers: Map[String, String],
+                       override val body: String,
+                       override val failed: Boolean,
+                       status: Int,
+                       now: Long) extends HttpLog {
+  override protected val logData: Map[String, String] =
+    Map(
+      "Status" -> status.toString,
+      "Took"   -> s"${now - time} ms"
+    )
 }

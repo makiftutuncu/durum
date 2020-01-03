@@ -2,31 +2,20 @@ package dev.akif.durum
 
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
-case class RequestLog(method: String,
-                      uri: String,
-                      id: String,
-                      time: Long,
-                      headers: Map[String, String],
-                      body: String) {
-  val humanReadableTime: String = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC).withNano(0).toString
-
-  def toLogString(isIncoming: Boolean): String = {
-    val title  = s"${if (isIncoming) "Incoming" else "Outgoing"} Request"
-    val prefix = if (isIncoming) "<" else ">"
-    val sb     = new StringBuilder(s"$title\n")
-
-    def append(s: String): StringBuilder     = sb.append(prefix).append(s)
-    def appendLine(s: String): StringBuilder = append(s).append("\n")
-
-    appendLine(s" $method $uri")
-    appendLine(s" Id: $id")
-    appendLine(s" Time: $humanReadableTime")
-    headers.foreachEntry((name, value) => appendLine(s" $name: $value"))
-    if (body.nonEmpty) {
-      appendLine("")
-      append(s" $body")
-    }
-
-    sb.toString()
-  }
+/**
+ * HTTP log for a request
+ *
+ * @see [[dev.akif.durum.HttpLog]]
+ */
+case class RequestLog(override val id: String,
+                      override val time: Long,
+                      override val method: String,
+                      override val uri: String,
+                      override val headers: Map[String, String],
+                      override val body: String,
+                      override val failed: Boolean) extends HttpLog {
+  override protected val logData: Map[String, String] =
+    Map(
+      "Time" -> ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC).withFixedOffsetZone().withNano(0).toString
+    )
 }
