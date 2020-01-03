@@ -156,12 +156,20 @@ class DurumSpec extends AnyWordSpec with Matchers {
   }
 
   "Basic action" should {
+    def failingAction(request: TestRequest[String], error: Throwable): Try[TestResponse[String]] =
+      testDurum.basicAction(request) { ctx =>
+        Failure(error)
+      }
+
+    def action(request: TestRequest[String]): Try[TestResponse[String]] =
+      testDurum.basicAction(request) { ctx =>
+        Success(testResponse)
+      }
+
     "return error when auth fails" in {
       val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "auth-failed"))
 
-      val actual = testDurum.basicAction(testRequest) { ctx =>
-        Success(testResponse)
-      }
+      val actual = action(testRequest)
 
       actual shouldBe expected
     }
@@ -171,9 +179,7 @@ class DurumSpec extends AnyWordSpec with Matchers {
 
       val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "test"))
 
-      val actual = testDurum.basicAction(validRequest) { ctx =>
-        Failure(testError)
-      }
+      val actual = failingAction(validRequest, testError)
 
       actual shouldBe expected
     }
@@ -183,63 +189,196 @@ class DurumSpec extends AnyWordSpec with Matchers {
 
       val expected = Success(testResponse)
 
-      val actual = testDurum.basicAction(validRequest) { ctx =>
-        Success(testResponse)
-      }
+      val actual = action(validRequest)
 
       actual shouldBe expected
     }
   }
 
   "Action with input" should {
+    def failingAction(request: TestRequest[String], error: Throwable)(implicit reqb: RequestBuilder[Try, TestRequest[String], Int]): Try[TestResponse[String]] =
+      testDurum.actionWithInput[Int](request) { ctx =>
+        Failure(error)
+      }
+
+    def action(request: TestRequest[String])(implicit reqb: RequestBuilder[Try, TestRequest[String], Int]): Try[TestResponse[String]] =
+      testDurum.actionWithInput[Int](request) { ctx =>
+        Success(testResponse)
+      }
+
     "return error when converting input fails" in {
-      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](_ => Failure(inputFailedError))
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Int] = requestBuilder[Int](_ => Failure(inputFailedError))
 
       val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "input-failed"))
 
-      val actual = testDurum.actionWithInput[Boolean](testRequest) { ctx =>
-        Success(testResponse)
-      }
+      val actual = action(testRequest)
 
       actual shouldBe expected
     }
 
     "return error when auth fails" in {
-      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](s => Try(s.toBoolean))
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Int] = requestBuilder[Int](s => Success(s.toInt))
 
       val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "auth-failed"))
 
-      val actual = testDurum.actionWithInput[Boolean](testRequest.copy(body = "true")) { ctx =>
-        Success(testResponse)
-      }
+      val actual = action(testRequest.copy(body = "5"))
 
       actual shouldBe expected
     }
 
     "return error when action fails" in {
-      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](s => Try(s.toBoolean))
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Int] = requestBuilder[Int](s => Success(s.toInt))
 
       val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
 
       val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "test"))
 
-      val actual = testDurum.actionWithInput[Boolean](validRequest.copy(body = "true")) { ctx =>
-        Failure(testError)
-      }
+      val actual = failingAction(validRequest.copy(body = "5"), testError)
 
       actual shouldBe expected
     }
 
     "perform action and return response" in {
-      implicit val rb: RequestBuilder[Try, TestRequest[String], Boolean] = requestBuilder[Boolean](s => Try(s.toBoolean))
+      implicit val rb: RequestBuilder[Try, TestRequest[String], Int] = requestBuilder[Int](s => Success(s.toInt))
 
       val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
 
       val expected = Success(testResponse)
 
-      val actual = testDurum.actionWithInput[Boolean](validRequest.copy(body = "true")) { ctx =>
-        Success(testResponse)
+      val actual = action(validRequest.copy(body = "5"))
+
+      actual shouldBe expected
+    }
+  }
+
+  "Action with output" should {
+    def failingAction(request: TestRequest[String], error: Throwable)(implicit resb: ResponseBuilder[Try, Boolean, TestResponse[String]]): Try[TestResponse[String]] =
+      testDurum.actionWithOutput[Boolean](request) { ctx =>
+        Failure(error)
       }
+
+    def action(request: TestRequest[String])(implicit resb: ResponseBuilder[Try, Boolean, TestResponse[String]]): Try[TestResponse[String]] =
+      testDurum.actionWithOutput[Boolean](request) { ctx =>
+        Success(true)
+      }
+
+    "return error when auth fails" in {
+      implicit val rb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, b => Try(b.toString))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "auth-failed"))
+
+      val actual = action(testRequest)
+
+      actual shouldBe expected
+    }
+
+    "return error when action fails" in {
+      implicit val rb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, b => Try(b.toString))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "test"))
+
+      val actual = failingAction(validRequest, testError)
+
+      actual shouldBe expected
+    }
+
+    "return error when converting output fails" in {
+      implicit val rb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, _ => Failure(outputFailedError))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "output-failed"))
+
+      val actual = action(validRequest)
+
+      actual shouldBe expected
+    }
+
+    "perform action and return response" in {
+      implicit val rb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, b => Try(b.toString))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"))
+
+      val expected = Success(testResponse.copy(body = "true", headers = Map(Durum.idHeaderName -> testId)))
+
+      val actual = action(validRequest)
+
+      actual shouldBe expected
+    }
+  }
+
+  "Action with input and output" should {
+    def failingAction(request: TestRequest[String], error: Throwable)(implicit reqb: RequestBuilder[Try, TestRequest[String], Int], resb: ResponseBuilder[Try, Boolean, TestResponse[String]]): Try[TestResponse[String]] =
+      testDurum.actionWithInputAndOutput[Int, Boolean](request) { ctx =>
+        Failure(error)
+      }
+
+    def action(request: TestRequest[String])(implicit reqb: RequestBuilder[Try, TestRequest[String], Int], resb: ResponseBuilder[Try, Boolean, TestResponse[String]]): Try[TestResponse[String]] =
+      testDurum.actionWithInputAndOutput[Int, Boolean](request) { ctx =>
+        Success(ctx.body >= 0)
+      }
+
+    "return error when converting input fails" in {
+      implicit val reqb: RequestBuilder[Try, TestRequest[String], Int]       = requestBuilder[Int](_ => Failure(inputFailedError))
+      implicit val resb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, b => Success(b.toString))
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "input-failed"))
+
+      val actual = action(testRequest)
+
+      actual shouldBe expected
+    }
+
+    "return error when auth fails" in {
+      implicit val reqb: RequestBuilder[Try, TestRequest[String], Int]       = requestBuilder[Int](s => Success(s.toInt))
+      implicit val resb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, b => Success(b.toString))
+
+      val validRequest = testRequest.copy(body = "5")
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "auth-failed"))
+
+      val actual = action(validRequest)
+
+      actual shouldBe expected
+    }
+
+    "return error when action fails" in {
+      implicit val reqb: RequestBuilder[Try, TestRequest[String], Int]       = requestBuilder[Int](s => Success(s.toInt))
+      implicit val resb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, b => Success(b.toString))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"), body = "5")
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "test"))
+
+      val actual = failingAction(validRequest, testError)
+
+      actual shouldBe expected
+    }
+
+    "return error when converting output fails" in {
+      implicit val reqb: RequestBuilder[Try, TestRequest[String], Int]       = requestBuilder[Int](s => Success(s.toInt))
+      implicit val resb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, _ => Failure(outputFailedError))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"), body = "5")
+
+      val expected = Success(TestResponse(500, Map(Durum.idHeaderName -> testId), "output-failed"))
+
+      val actual = action(validRequest)
+
+      actual shouldBe expected
+    }
+
+    "perform action and return response" in {
+      implicit val reqb: RequestBuilder[Try, TestRequest[String], Int]       = requestBuilder[Int](s => Success(s.toInt))
+      implicit val resb: ResponseBuilder[Try, Boolean, TestResponse[String]] = responseBuilder[Boolean](200, b => Success(b.toString))
+
+      val validRequest = testRequest.copy(headers = Map("Authorization" -> "test:test"), body = "5")
+
+      val expected = Success(testResponse.copy(body = "true", headers = Map(Durum.idHeaderName -> testId)))
+
+      val actual = action(validRequest)
 
       actual shouldBe expected
     }

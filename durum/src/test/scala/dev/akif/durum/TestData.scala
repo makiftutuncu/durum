@@ -26,9 +26,10 @@ object TestData {
         }
     }
 
-  val inputFailedError = new RuntimeException("input-failed")
-  val authFailedError  = new RuntimeException("auth-failed")
-  val testError        = new RuntimeException("test")
+  val inputFailedError  = new RuntimeException("input-failed")
+  val authFailedError   = new RuntimeException("auth-failed")
+  val outputFailedError = new RuntimeException("output-failed")
+  val testError         = new RuntimeException("test")
 
   case class TestRequest[B](method: String, uri: String, headers: Map[String, String], body: B)
 
@@ -84,5 +85,12 @@ object TestData {
       override def build(req: TestRequest[String]): Try[A] = parser(req.body)
 
       override def log(req: TestRequest[String]): Try[String] = Success(req.body)
+    }
+
+  def responseBuilder[A](status: Int, converter: A => Try[String]): ResponseBuilder[Try, A, TestResponse[String]] =
+    new ResponseBuilder[Try, A, TestResponse[String]] {
+      override def build(status: Int, a: A): Try[TestResponse[String]] = converter(a).map(s => TestResponse(status, Map.empty, s))
+
+      override def log(a: A): Try[String] = converter(a)
     }
 }
