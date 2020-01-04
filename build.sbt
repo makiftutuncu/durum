@@ -25,15 +25,15 @@ lazy val commonSettings = Seq(
 
 // === Modules ===
 
-lazy val root = project
+lazy val durum = project
   .in(file("."))
-  .aggregate(`durum`)
+  .aggregate(`durum-core`)
   .settings(
     skip in publish := true
   )
 
-lazy val durum = project
-  .in(file("durum"))
+lazy val `durum-core` = project
+  .in(file("durum-core"))
   .settings(commonSettings)
 
 // === Release Settings ===
@@ -53,7 +53,7 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  releaseStepCommandAndRemaining("durum/publishLocal"),
+  releaseStepCommandAndRemaining("durum-core/publishLocal"),
   setNextVersion,
   commitNextVersion,
   pushChanges

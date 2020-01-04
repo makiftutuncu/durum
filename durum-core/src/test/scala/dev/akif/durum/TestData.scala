@@ -17,6 +17,8 @@ object TestData {
                         override val auth: TestAuth) extends Ctx[TestRequest[String], B, TestAuth](id, time, request, headers, body, auth)
 
   class TestDurum extends Durum[Try, Throwable, TestRequest[String], TestResponse[String], TestAuth, TestCtx] {
+    override val errorOutputBuilder: OutputBuilder[Try, Throwable, TestResponse[String]] = outputBuilder[Throwable](Durum.failedStatus, t => Success(t.getMessage))
+
     override def getHeadersOfRequest(request: TestRequest[String]): Map[String, String] = request.headers
 
     override def getMethodOfRequest(request: TestRequest[String]): String = request.method
@@ -88,8 +90,6 @@ object TestData {
           case Failure(t)     => handleError(t)
         }
     }
-
-  implicit val errorOutputBuilder: OutputBuilder[Try, Throwable, TestResponse[String]] = outputBuilder[Throwable](Durum.failedStatus, t => Success(t.getMessage))
 
   val inputFailedError  = new RuntimeException("input-failed")
   val authFailedError   = new RuntimeException("auth-failed")

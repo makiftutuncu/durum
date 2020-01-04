@@ -11,8 +11,7 @@ import dev.akif.durum.syntax._
  * Dürüm provides abstractions for common operations like logging, timing, authorization etc.
  * It has no external dependency and expects you to wire-in concrete types for HTTP request and response objects.
  *
- * @param F                   Implicit instance of the effect
- * @param errorOutputBuilder  Implicit instance of an [[dev.akif.durum.OutputBuilder]] for effect errors
+ * @param F Implicit instance of the effect
  *
  * @tparam F    Type of the effect, see [[dev.akif.durum.Effect]]
  * @tparam E    Type of the error with which the effect can fail
@@ -21,7 +20,12 @@ import dev.akif.durum.syntax._
  * @tparam AUTH Type of authorization data Dürüm builds from request
  * @tparam CTX  Type of context object Dürüm builds for request
  */
-abstract class Durum[F[+_], E, REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](implicit F: Effect[F, E], errorOutputBuilder: OutputBuilder[F, E, RES]) {
+abstract class Durum[F[+_], E, REQ, RES, AUTH, CTX[BODY] <: Ctx[REQ, BODY, AUTH]](implicit F: Effect[F, E]) {
+  /**
+   * Instance of an [[dev.akif.durum.OutputBuilder]] for effect errors so that failed responses can be built
+   */
+  val errorOutputBuilder: OutputBuilder[F, E, RES]
+
   /**
    * Gets headers of an HTTP request as a Map
    *
