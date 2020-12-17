@@ -14,7 +14,7 @@ object TestData {
                         override val request: TestRequest[String],
                         override val headers: Map[String, String],
                         override val body: B,
-                        override val auth: TestAuth) extends Ctx[TestRequest[String], B, TestAuth](id, time, request, headers, body, auth)
+                        override val auth: TestAuth) extends Ctx[TestRequest[String], B, TestAuth]
 
   class TestDurum extends Durum[Try, Throwable, TestRequest[String], TestResponse[String], TestAuth, TestCtx] {
     override val errorOutputBuilder: OutputBuilder[Try, Throwable, TestResponse[String]] = outputBuilder[Throwable](Durum.failedStatus, t => Success(t.getMessage))

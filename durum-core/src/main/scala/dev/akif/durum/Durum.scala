@@ -5,7 +5,7 @@ import java.util.UUID
 import dev.akif.durum.syntax._
 
 /**
- * Dürüm (Turkish for wraps, as in food) is an HTTP wrapper for Scala.
+ * Dürüm (Turkish word for wraps, as in food) is an HTTP wrapper for Scala.
  *
  * It helps generalize the behavior of handling an HTTP request in a server application.
  * Dürüm provides abstractions for common operations like logging, timing, authorization etc.
@@ -15,7 +15,7 @@ import dev.akif.durum.syntax._
  *
  * @tparam F    Type of the effect, see [[dev.akif.durum.Effect]]
  * @tparam E    Type of the error with which the effect can fail
- * @tparam REQ  Type of HTTP request Dürüm accpets
+ * @tparam REQ  Type of HTTP request Dürüm accepts
  * @tparam RES  Type of HTTP response Dürüm produces
  * @tparam AUTH Type of authorization data Dürüm builds from request
  * @tparam CTX  Type of context object Dürüm builds for request

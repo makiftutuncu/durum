@@ -202,7 +202,7 @@ class DurumSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "Action with output" should {
+  "Wrapping with output" should {
     def failingController(request: TestRequest[String], error: Throwable)(implicit ob: OutputBuilder[Try, Boolean, TestResponse[String]]): Try[TestResponse[String]] =
       testDurum.wrapWithOutput[Boolean](request) { ctx =>
         Failure(error)
@@ -260,7 +260,7 @@ class DurumSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "Action with input and output" should {
+  "Wrapping with input and output" should {
     def failingController(request: TestRequest[String], error: Throwable)(implicit ib: InputBuilder[Try, TestRequest[String], Int], ob: OutputBuilder[Try, Boolean, TestResponse[String]]): Try[TestResponse[String]] =
       testDurum.wrapWithInputAndOutput[Int, Boolean](request) { ctx =>
         Failure(error)

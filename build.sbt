@@ -1,3 +1,5 @@
+import sbt.Keys._
+
 // === Dependencies ===
 
 lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.1.0" % Test
@@ -5,8 +7,9 @@ lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.1.0" % Test
 // === Project Settings ===
 
 description          in ThisBuild := "Delicious HTTP Wrapper"
+version              in ThisBuild := "1.0.0"
 homepage             in ThisBuild := Some(url("https://github.com/makiftutuncu/durum"))
-startYear            in ThisBuild := Some(2019)
+startYear            in ThisBuild := Some(2020)
 licenses             in ThisBuild := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
 organization         in ThisBuild := "dev.akif"
 organizationName     in ThisBuild := "Mehmet Akif Tütüncü"
@@ -20,7 +23,19 @@ lazy val commonSettings = Seq(
 
   libraryDependencies ++= Seq(
     scalaTest
-  )
+  ),
+
+  apiMappings ++= {
+    val classpath = (fullClasspath in Compile).value
+    def findJar(name: String): File = {
+      val regex = ("/" + name + "[^/]*.jar$").r
+      classpath.find { jar => regex.findFirstIn(jar.data.toString).nonEmpty }.get.data
+    }
+
+    Map(
+      findJar("scala-library") -> url(s"http://scala-lang.org/api/${scalaVersion.value}/")
+    )
+  },
 )
 
 // === Modules ===
@@ -35,26 +50,3 @@ lazy val durum = project
 lazy val `durum-core` = project
   .in(file("durum-core"))
   .settings(commonSettings)
-
-// === Release Settings ===
-
-import ReleaseTransformations._
-
-credentials          in ThisBuild += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
-pomIncludeRepository in ThisBuild := { _ => false }
-publishMavenStyle    in ThisBuild := true
-publishTo            in ThisBuild := { Some(if (isSnapshot.value) "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots" else "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2") }
-
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  releaseStepCommandAndRemaining("durum-core/publishLocal"),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
-)

@@ -42,7 +42,8 @@ trait HttpLog {
     val title  = s"${if (logType.incoming) "Incoming" else "Outgoing"} ${logType.name}"
     val sb     = new StringBuilder(s"$title\n")
 
-    def append(s: String): StringBuilder     = sb.append(logType.prefix).append(s)
+    def append(s: String): StringBuilder = sb.append(logType.prefix).append(s)
+
     def appendLine(s: String): StringBuilder = append(s).append("\n")
 
     appendLine(s" $method $uri")
